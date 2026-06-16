@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visite Virtuelle - Vierzon</title>
     
+    <!-- Bibliothèque 360° Pannellum -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
 
@@ -77,8 +78,10 @@
         <h1>Apt N2 _ place Vaillant Couturier Vierzon _ T3 _ 60 m2</h1>
     </header>
 
+    <!-- Zone d'affichage 360° -->
     <div id="panorama"></div>
 
+    <!-- Barre de boutons inférieure -->
     <div id="nav-bar">
         <button class="nav-btn active" onclick="chargerPhoto('sejour', this)">Séjour</button>
         <button class="nav-btn" onclick="chargerPhoto('cuisine', this)">Cuisine</button>
@@ -88,7 +91,7 @@
     </div>
 
     <script>
-        // Chemins mis à jour avec .JPG et le bon nom pour la chambre 2
+        // Liste de vos images
         const scenes = {
             sejour: "sejour.JPG",
             cuisine: "cuisine.JPG",
@@ -99,23 +102,35 @@
 
         let viewer;
 
-        // Chargement initial sur le séjour
+        // Configuration de base partagée par toutes les photos
+        const configDeBase = {
+            "type": "equirectangular",
+            "autoLoad": true,
+            "cors": "anonymous",
+            "showControls": false
+        };
+
+        // Chargement initial (Séjour)
         function initialiserVisite() {
             viewer = pannellum.viewer('panorama', {
-                "type": "equirectangular",
-                "panorama": scenes.sejour,
-                "autoLoad": true,
-                "cors": "anonymous", // Évite les blocages d'image sur GitHub
-                "showControls": false // Pas de flèches de navigation
+                ...configDeBase,
+                "panorama": scenes.sejour
             });
         }
 
-        // Changement de pièce lors du clic en bas
+        // Changement de pièce propre (destruction du viewer et recréation instantanée)
         function chargerPhoto(nomScene, boutonActif) {
-            // Rechargement complet de la scène avec le paramètre CORS pour chaque image
-            viewer.loadScene(scenes[nomScene], "equirectangular");
+            if (viewer) {
+                viewer.destroy(); // On nettoie l'ancienne image pour éviter le bug beige
+            }
             
-            // Gestion visuelle des boutons actifs
+            // On recrée le panorama avec la nouvelle image
+            viewer = pannellum.viewer('panorama', {
+                ...configDeBase,
+                "panorama": scenes[nomScene]
+            });
+            
+            // Gestion visuelle des boutons
             const boutons = document.querySelectorAll('.nav-btn');
             boutons.forEach(btn => btn.classList.remove('active'));
             boutonActif.classList.add('active');
