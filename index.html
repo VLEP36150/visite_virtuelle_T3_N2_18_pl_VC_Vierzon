@@ -88,13 +88,13 @@
     </div>
 
     <script>
-        // Chemins directs vers vos photos sur GitHub
+        // Chemins mis à jour avec .JPG et le bon nom pour la chambre 2
         const scenes = {
             sejour: "sejour.JPG",
             cuisine: "cuisine.JPG",
             sdb: "sdb.JPG",
             chambre1: "chambre_gauche.JPG",
-            chambre2: "sejour_2.JPG"
+            chambre2: "chambre_fond.JPG"
         };
 
         let viewer;
@@ -105,15 +105,17 @@
                 "type": "equirectangular",
                 "panorama": scenes.sejour,
                 "autoLoad": true,
-                "showControls": false // Pas de flèches ni de boutons natifs
+                "cors": "anonymous", // Évite les blocages d'image sur GitHub
+                "showControls": false // Pas de flèches de navigation
             });
         }
 
         // Changement de pièce lors du clic en bas
         function chargerPhoto(nomScene, boutonActif) {
+            // Rechargement complet de la scène avec le paramètre CORS pour chaque image
             viewer.loadScene(scenes[nomScene], "equirectangular");
             
-            // Gestion de l'état actif des boutons
+            // Gestion visuelle des boutons actifs
             const boutons = document.querySelectorAll('.nav-btn');
             boutons.forEach(btn => btn.classList.remove('active'));
             boutonActif.classList.add('active');
