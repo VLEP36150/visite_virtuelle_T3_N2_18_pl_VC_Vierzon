@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Visite Virtuelle - Vierzon</title>
     
-    <!-- Bibliothèque 360° Pannellum -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
 
@@ -70,73 +69,128 @@
             border-color: #00a2ff;
             font-weight: bold;
         }
+        
+        /* ÉCRAN DE CHARGEMENT AMÉLIORÉ */
+        #loading-overlay {
+            position: absolute;
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+            /* Utilisation de sejour.JPG comme image de fond */
+            background: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.65)), url('sejour.JPG') no-repeat center center;
+            background-size: cover;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+        }
+        #loading-overlay h2 {
+            font-size: 1.6rem;
+            font-weight: normal;
+            margin-bottom: 20px;
+            max-width: 800px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+        #loading-status {
+            font-size: 1.1rem;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 1px solid #555;
+        }
     </style>
 </head>
 <body>
+
+    <div id="loading-overlay">
+        <h2>Apt N2 _ place Vaillant Couturier Vierzon _ T3 _ 60 m2</h2>
+        <div id="loading-status">Préparation de la visite... (0/5)</div>
+    </div>
 
     <header>
         <h1>Apt N2 _ place Vaillant Couturier Vierzon _ T3 _ 60 m2</h1>
     </header>
 
-    <!-- Zone d'affichage 360° -->
     <div id="panorama"></div>
 
-    <!-- Barre de boutons inférieure -->
     <div id="nav-bar">
-        <button class="nav-btn active" onclick="chargerPhoto('sejour', this)">Séjour</button>
-        <button class="nav-btn" onclick="chargerPhoto('cuisine', this)">Cuisine</button>
-        <button class="nav-btn" onclick="chargerPhoto('sdb', this)">SDB</button>
-        <button class="nav-btn" onclick="chargerPhoto('chambre1', this)">Chambre 1</button>
-        <button class="nav-btn" onclick="chargerPhoto('chambre2', this)">Chambre 2</button>
+        <button class="nav-btn active" onclick="changerPiece('sejour', this)">Séjour</button>
+        <button class="nav-btn" onclick="changerPiece('cuisine', this)">Cuisine</button>
+        <button class="nav-btn" onclick="changerPiece('sdb', this)">SDB</button>
+        <button class="nav-btn" onclick="changerPiece('chambre1', this)">Chambre 1</button>
+        <button class="nav-btn" onclick="changerPiece('chambre2', this)">Chambre 2</button>
     </div>
 
     <script>
-        // Liste de vos images
-        const scenes = {
-            sejour: "sejour.JPG",
-            cuisine: "cuisine.JPG",
-            sdb: "sdb.JPG",
-            chambre1: "chambre_gauche.JPG",
-            chambre2: "chambre_fond.JPG"
+        // Configuration globale de Pannellum
+        const configurationVisite = {
+            "default": {
+                "firstScene": "sejour",
+                "autoLoad": true,
+                "cors": "anonymous",
+                "showControls": false
+            },
+            "scenes": {
+                "sejour": { "type": "equirectangular", "panorama": "sejour.JPG" },
+                "cuisine": { "type": "equirectangular", "panorama": "cuisine.JPG" },
+                "sdb": { "type": "equirectangular", "panorama": "sdb.JPG" },
+                "chambre1": { "type": "equirectangular", "panorama": "chambre_gauche.JPG" },
+                "chambre2": { "type": "equirectangular", "panorama": "chambre_fond.JPG" }
+            }
         };
 
         let viewer;
+        let imagesChargees = 0;
+        const totalImages = Object.keys(configurationVisite.scenes).length;
 
-        // Configuration de base partagée par toutes les photos
-        const configDeBase = {
-            "type": "equirectangular",
-            "autoLoad": true,
-            "cors": "anonymous",
-            "showControls": false
-        };
-
-        // Chargement initial (Séjour)
-        function initialiserVisite() {
-            viewer = pannellum.viewer('panorama', {
-                ...configDeBase,
-                "panorama": scenes.sejour
-            });
-        }
-
-        // Changement de pièce propre (destruction du viewer et recréation instantanée)
-        function chargerPhoto(nomScene, boutonActif) {
-            if (viewer) {
-                viewer.destroy(); // On nettoie l'ancienne image pour éviter le bug beige
+        // Préchargement en arrière-plan
+        function prechargerImages() {
+            const statusTxt = document.getElementById('loading-status');
+            const overlay = document.getElementById('loading-overlay');
+            
+            for (let cle in configurationVisite.scenes) {
+                const img = new Image();
+                img.src = configurationVisite.scenes[cle].panorama;
+                
+                img.onload = () => {
+                    imagesChargees++;
+                    statusTxt.innerText = `Chargement des pièces... (${imagesChargees}/${totalImages})`;
+                    
+                    // Quand tout est en mémoire, on lance la visite interactive 360°
+                    if (imagesChargees === totalImages) {
+                        overlay.style.transition = 'opacity 0.5s ease';
+                        overlay.style.opacity = '0';
+                        setTimeout(() => {
+                            overlay.style.display = 'none';
+                            initialiserVisite();
+                        }, 500);
+                    }
+                };
+                
+                img.onerror = () => {
+                    console.error("Fichier introuvable : " + img.src);
+                };
             }
-            
-            // On recrée le panorama avec la nouvelle image
-            viewer = pannellum.viewer('panorama', {
-                ...configDeBase,
-                "panorama": scenes[nomScene]
-            });
-            
-            // Gestion visuelle des boutons
-            const boutons = document.querySelectorAll('.nav-btn');
-            boutons.forEach(btn => btn.classList.remove('active'));
-            boutonActif.classList.add('active');
         }
 
-        window.onload = initialiserVisite;
+        function initialiserVisite() {
+            viewer = pannellum.viewer('panorama', configurationVisite);
+        }
+
+        function changerPiece(nomScene, boutonActif) {
+            if (viewer) {
+                viewer.loadScene(nomScene);
+                const boutons = document.querySelectorAll('.nav-btn');
+                boutons.forEach(btn => btn.classList.remove('active'));
+                boutonActif.classList.add('active');
+            }
+        }
+
+        window.onload = prechargerImages;
     </script>
 
 </body>
